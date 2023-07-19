@@ -47,7 +47,7 @@ pipeline {
         stage('Deploy to Staging'){
           when {
               allOf {
-                     not { branch 'master' }
+                     not { branch 'main' }
                      not { changeRequest() }
                     }
                }
