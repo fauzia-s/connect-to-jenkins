@@ -1,3 +1,58 @@
+/*
+ * Gets all changesets since last successful build of the Jenkins job.
+ *
+ * @param currentJobBuild The Current Build Instance
+ * @return List of ChangeSets
+ */
+def getAllChangeSetsSinceLastSuccessfulBuild(currentJobBuild) {
+  def allChangeSets = []
+  allChangeSets.addAll(currentJobBuild.changeSets)
+  def build = currentJobBuild.previousBuild
+
+  while (build != null) {
+      if (build.result == "SUCCESS")
+      {
+          break
+      }
+      allChangeSets.addAll(build.changeSets)
+      build = build.previousBuild
+  }
+  return allChangeSets
+}
+
+/*
+ * Gets modified files from a list of changesets.
+ *
+ * @param jobChangeLogSets  List of changesets
+ * @param prefix : Filter the list of files by prefix
+ * @return List of DSL & non DSL files that were modified and contained the prefix
+ */
+def getModifiedAqueductDSLFiles(jobChangeLogSets, prefix="") {
+  // Seperating DSL & Non-DSL files
+  def dslFilesList = []
+  def otherFilesList = []
+
+  for (int i = 0; i < jobChangeLogSets.size(); i++) {
+    def entries = jobChangeLogSets[i].items
+    for (int j = 0; j < entries.length; j++) {
+      def entry = entries[j]
+      def files = new ArrayList(entry.affectedFiles)
+      for (int k = 0; k < files.size(); k++) {
+        def file = files[k]
+        if (file.path.startsWith(prefix)) {
+          if(file.path.endsWith(".json")) {
+            dslFilesList.add(file.path)
+          } else {
+            otherFilesList.add(file.path)
+          }
+        }
+      }
+    }
+  }
+  return [dslFilesList.toSet(), otherFilesList.toSet()]
+}
+
+
 pipeline {
     agent any
 
@@ -53,6 +108,8 @@ pipeline {
                }
             steps {
                 echo 'Deploying to staging'
+                echo "Changesets: ${allChangeSets}"
+                echo "Modified files ${dslFilesList},${otherFilesList}"
            }
         }
         stage('Deploy to Production'){
@@ -78,4 +135,4 @@ pipeline {
     }
   }
 
-    
+
