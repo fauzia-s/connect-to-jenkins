@@ -60,7 +60,7 @@ pipeline {
                          branch 'main'
                    }
             steps{
-                echo 'Deploying to production'
+                echo 'Deploying to production.'
            }
         }
     }
