@@ -20,38 +20,41 @@ def getAllChangeSetsSinceLastSuccessfulBuild(currentBuild) {
   return allChangeSets
 }
 
-/*
+def getModifiedAqueductDSLFiles(jobChangeLogSets, prefix="") {
+  // Seperating DSL & Non-DSL files
+  def fileList = []
+
+  for (int i = 0; i < jobChangeLogSets.size(); i++) {
+    def entries = jobChangeLogSets[i].items
+    for (int j = 0; j < entries.length; j++) {
+      def entry = entries[j]
+      def files = new ArrayList(entry.affectedFiles)
+      for (int k = 0; k < files.size(); k++) {
+        def file = files[k]
+            fileList.add(file.path)
+        }
+      }
+    }
+  return fileList
+}
+
+ /*
  * Gets modified files from a list of changesets.
  *
- * @param jobChangeLogSets  List of changesets
- * @param prefix : Filter the list of files by prefix
+ * @param currentJobBuild:  current job build
+ * @param prefix: Filter the list of files by prefix
+ * @param sinceLastSuccessFulBuild: if history needs to be checked
  * @return List of DSL & non DSL files that were modified and contained the prefix
  */
-// def getModifiedAqueductDSLFiles(jobChangeLogSets, prefix="") {
-//   // Seperating DSL & Non-DSL files
-//   def dslFilesList = []
-//   def otherFilesList = []
-
-//   for (int i = 0; i < jobChangeLogSets.size(); i++) {
-//     def entries = jobChangeLogSets[i].items
-//     for (int j = 0; j < entries.length; j++) {
-//       def entry = entries[j]
-//       def files = new ArrayList(entry.affectedFiles)
-//       for (int k = 0; k < files.size(); k++) {
-//         def file = files[k]
-//         if (file.path.startsWith(prefix)) {
-//           if(file.path.endsWith(".json")) {
-//             dslFilesList.add(file.path)
-//           } else {
-//             otherFilesList.add(file.path)
-//           }
-//         }
-//       }
-//     }
-//   }
-//   return [dslFilesList.toSet(), otherFilesList.toSet()]
-// }
-
+def getModifiedFiles(currentJobBuild, prefix, sinceLastSuccessFulBuild = false) {
+  def jobChangeLogSets = []
+  if (sinceLastSuccessFulBuild) {
+    jobChangeLogSets = getAllChangeSetsSinceLastSuccessfulBuild(currentJobBuild)
+  } else {
+    jobChangeLogSets = currentJobBuild.changeSets
+  }
+  return getModifiedAqueductDSLFiles(jobChangeLogSets, prefix)
+}
 
 pipeline {
     agent any
@@ -108,11 +111,13 @@ pipeline {
                }
             steps {
                 script{
-                   def allChangeSets = getAllChangeSetsSinceLastSuccessfulBuild(currentBuild)    
+                //   def allChangeSets = getAllChangeSetsSinceLastSuccessfulBuild(currentBuild) 
+                   def fileList = getModifiedFiles(currentBuild,'')
                    echo 'Deploying to staging'
-                   echo "${currentBuild}"
-                   echo "Changesets: ${allChangeSets}"
-                // echo "Modified files ${dslFilesList},${otherFilesList}"
+                //   echo "${currentBuild}"
+                //   echo "Changesets: ${allChangeSets}"
+                echo "Modified files ${fileList}"
+                echo "SCM: ${scm}"
                 }
            }
         }
