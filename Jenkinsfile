@@ -76,4 +76,6 @@ pipeline {
             echo "This step will run after all other steps have finished.  It will always run, even in the status of the build is not SUCCESS"
         }
     }
+  }
 }
+    
