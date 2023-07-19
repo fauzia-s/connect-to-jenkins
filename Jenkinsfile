@@ -63,7 +63,7 @@ pipeline {
                 echo 'Deploying to production'
            }
         }
-
+    }
     // the post section is a special collection of stages
     // that are run after all other stages have completed
     post {
@@ -77,5 +77,5 @@ pipeline {
         }
     }
   }
-}
+
     
