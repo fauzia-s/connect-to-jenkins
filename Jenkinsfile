@@ -53,6 +53,7 @@ pipeline {
                }
             steps {
                 echo 'Deploying to staging'
+           }
         }
         stage('Deploy to Production'){
                   when {
@@ -60,6 +61,7 @@ pipeline {
                    }
             steps{
                 echo 'Deploying to production'
+           }
         }
 
     // the post section is a special collection of stages
