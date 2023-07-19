@@ -44,7 +44,23 @@ pipeline {
                 echo 'Reporting....'
             }
         }
-    }
+        stage('Deploy to Staging'){
+          when {
+              allOf {
+                     not { branch 'master' }
+                     not { changeRequest() }
+                    }
+               }
+            steps {
+                echo 'Deploying to staging'
+        }
+        stage('Deploy to Production'){
+                  when {
+                         branch 'main'
+                   }
+            steps{
+                echo 'Deploying to production'
+        }
 
     // the post section is a special collection of stages
     // that are run after all other stages have completed
