@@ -4,10 +4,10 @@
  * @param currentJobBuild The Current Build Instance
  * @return List of ChangeSets
  */
-def getAllChangeSetsSinceLastSuccessfulBuild(currentJobBuild) {
+def getAllChangeSetsSinceLastSuccessfulBuild(currentBuild) {
   def allChangeSets = []
-  allChangeSets.addAll(currentJobBuild.changeSets)
-  def build = currentJobBuild.previousBuild
+  allChangeSets.addAll(currentBuild.changeSets)
+  def build = currentBuild.previousBuild
 
   while (build != null) {
       if (build.result == "SUCCESS")
@@ -27,30 +27,30 @@ def getAllChangeSetsSinceLastSuccessfulBuild(currentJobBuild) {
  * @param prefix : Filter the list of files by prefix
  * @return List of DSL & non DSL files that were modified and contained the prefix
  */
-def getModifiedAqueductDSLFiles(jobChangeLogSets, prefix="") {
-  // Seperating DSL & Non-DSL files
-  def dslFilesList = []
-  def otherFilesList = []
+// def getModifiedAqueductDSLFiles(jobChangeLogSets, prefix="") {
+//   // Seperating DSL & Non-DSL files
+//   def dslFilesList = []
+//   def otherFilesList = []
 
-  for (int i = 0; i < jobChangeLogSets.size(); i++) {
-    def entries = jobChangeLogSets[i].items
-    for (int j = 0; j < entries.length; j++) {
-      def entry = entries[j]
-      def files = new ArrayList(entry.affectedFiles)
-      for (int k = 0; k < files.size(); k++) {
-        def file = files[k]
-        if (file.path.startsWith(prefix)) {
-          if(file.path.endsWith(".json")) {
-            dslFilesList.add(file.path)
-          } else {
-            otherFilesList.add(file.path)
-          }
-        }
-      }
-    }
-  }
-  return [dslFilesList.toSet(), otherFilesList.toSet()]
-}
+//   for (int i = 0; i < jobChangeLogSets.size(); i++) {
+//     def entries = jobChangeLogSets[i].items
+//     for (int j = 0; j < entries.length; j++) {
+//       def entry = entries[j]
+//       def files = new ArrayList(entry.affectedFiles)
+//       for (int k = 0; k < files.size(); k++) {
+//         def file = files[k]
+//         if (file.path.startsWith(prefix)) {
+//           if(file.path.endsWith(".json")) {
+//             dslFilesList.add(file.path)
+//           } else {
+//             otherFilesList.add(file.path)
+//           }
+//         }
+//       }
+//     }
+//   }
+//   return [dslFilesList.toSet(), otherFilesList.toSet()]
+// }
 
 
 pipeline {
@@ -107,9 +107,13 @@ pipeline {
                     }
                }
             steps {
-                echo 'Deploying to staging'
-                echo "Changesets: ${allChangeSets}"
-                echo "Modified files ${dslFilesList},${otherFilesList}"
+                script{
+                   def allChangeSets = getAllChangeSetsSinceLastSuccessfulBuild(currentBuild)    
+                   echo 'Deploying to staging'
+                   echo "${currentBuild}"
+                   echo "Changesets: ${allChangeSets}"
+                // echo "Modified files ${dslFilesList},${otherFilesList}"
+                }
            }
         }
         stage('Deploy to Production'){
