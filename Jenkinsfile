@@ -141,6 +141,8 @@ pipeline {
                         }
                      }
                     echo "Modified files compared to master: ${fileList}"
+                    echo "Jsons: ${dslFilesList}"
+                    echo "Other files: ${otherFilesList}"
                     }
                 else
                 {
