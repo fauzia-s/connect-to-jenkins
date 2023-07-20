@@ -56,6 +56,17 @@ def getModifiedFiles(currentJobBuild, prefix, sinceLastSuccessFulBuild = false) 
   return getModifiedAqueductDSLFiles(jobChangeLogSets, prefix)
 }
 
+/*
+ * Get changes compared to master
+ */
+
+def getDiffMaster(path) {
+  return sh(
+          script: "git diff --name-only origin/main...HEAD --diff-filter=d -- ${path}",
+          returnStdout: true
+  ).split('\n')
+}
+
 pipeline {
     agent any
 
@@ -110,15 +121,40 @@ pipeline {
                     }
                }
             steps {
-                script{
-                //   def allChangeSets = getAllChangeSetsSinceLastSuccessfulBuild(currentBuild) 
-                   def fileList = getModifiedFiles(currentBuild,'')
-                   echo 'Deploying to staging'
+                script
+                {
+                echo 'Deploying to staging'
+                if ((!currentBuild.previousBuild || currentBuild.previousBuild.result != 'SUCCESS'))
+                   {
+                     def fileList = getDiffMaster(".")
+                    //  def dslFilesList = []
+                    //  def otherFilesList = []
+                    //  for (int k = 0; k < fileList.size(); k++)
+                    //  {
+                    //     def file = fileList[k]
+                    //     if(file.path.endsWith(".json"))
+                    //     {
+                    //       dslFilesList.add(file.path)
+                    //     }
+                    //     else
+                    //     {
+                    //       otherFilesList.add(file.path)
+                    //     }
+                    //  }
+                    echo "Modified files compared to master: ${fileList}"
+                    }
+                else
+                {
+                //   def allChangeSets = getAllChangeSetsSinceLastSuccessfulBuild(currentBuild)
+                     def fileList = getModifiedFiles(currentBuild,'')
+
                 //   echo "${currentBuild}"
                 //   echo "Changesets: ${allChangeSets}"
-                echo "Modified files ${fileList}"
-                echo "SCM: ${scm}"
+                     echo "Modified files ${fileList}"
+//                      echo "SCM: ${scm}"
+
                 }
+              }
            }
         }
         stage('Deploy to Production'){
@@ -143,5 +179,4 @@ pipeline {
         }
     }
   }
-
 
