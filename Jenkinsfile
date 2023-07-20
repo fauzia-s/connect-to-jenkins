@@ -127,20 +127,21 @@ pipeline {
                 if ((!currentBuild.previousBuild || currentBuild.previousBuild.result != 'SUCCESS'))
                    {
                      def fileList = getDiffMaster(".")
-                     def dslFilesList = []
-                     def otherFilesList = []
-                     for (int k = 0; k < fileList.size(); k++)
-                     {
-                        def file = fileList[k]
-                        if(file.path.endsWith(".json"))
-                        {
-                           dslFilesList.add(file.path)
-                        }
-                        else
-                        {
-                           otherFilesList.add(file.path)
-                        }
-                     }
+                    //  def dslFilesList = []
+                    //  def otherFilesList = []
+                    //  for (int k = 0; k < fileList.size(); k++)
+                    //  {
+                    //     def file = fileList[k]
+                    //     if(file.path.endsWith(".json"))
+                    //     {
+                    //       dslFilesList.add(file.path)
+                    //     }
+                    //     else
+                    //     {
+                    //       otherFilesList.add(file.path)
+                    //     }
+                    //  }
+                    echo "Modified files compared to master: ${fileList}"
                     }
                 else
                 {
