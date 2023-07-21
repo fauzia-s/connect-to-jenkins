@@ -61,10 +61,21 @@ def getModifiedFiles(currentJobBuild, prefix, sinceLastSuccessFulBuild = false) 
  */
 
 def getDiffMaster(path) {
-  return sh(
+  def fileList = sh(
           script: "git diff --name-only origin/main...HEAD --diff-filter=d -- ${path}",
           returnStdout: true
   ).split('\n')
+  for (int k = 0; k < fileList.size(); k++){
+   def file = fileList[k]
+   if(file.endsWith(".json"))
+   {
+     dslFilesList.add(file)
+   }
+   else
+   {
+     otherFilesList.add(file)
+   }
+  }
 }
 
 pipeline {
@@ -126,23 +137,11 @@ pipeline {
                 echo 'Deploying to staging'
                 if ((!currentBuild.previousBuild || currentBuild.previousBuild.result != 'SUCCESS'))
                    {
-                     def fileList = getDiffMaster(".")
-                     def dslFilesList = []
-                     def otherFilesList = []
-                     for (int k = 0; k < fileList.size(); k++){
-                        def file = fileList[k]
-                        if(file.endsWith(".json"))
-                        {
-                          dslFilesList.add(file)
-                        }
-                        else
-                        {
-                          otherFilesList.add(file)
-                        }
-                     }
-                    echo "Modified files compared to master: ${fileList}"
-                    echo "Jsons: ${dslFilesList}"
-                    echo "Other files: ${otherFilesList}"
+                     def (dslFilesList,otherFilesList) = getDiffMaster(".")
+
+                     echo "Modified files compared to master: ${fileList}"
+                     echo "Jsons: ${dslFilesList}"
+                     echo "Other files: ${otherFilesList}"
                     }
                 else
                 {
