@@ -93,7 +93,9 @@ def getDiffMain(prefix) {
 
 pipeline{
     agent any
-
+    environment{
+        boolean firstBuild = true
+    }
     // this section configures Jenkins options
     options {
 
@@ -143,19 +145,19 @@ pipeline{
 
                             def branchName = env.BRANCH_NAME //Branch name: multibranch-webhook
                             def buildNumber = currentBuild.number
-                            boolean firstBuild = true
+                            // boolean firstBuild = true
 
                             // Get the previous build status
-                            def previousBuild = build job: "${JOB_NAME}", propagate: false, wait: false  //Job name: connect-to-jenkins repo/multibranch-webhook
+//                             def previousBuild = build job: "${JOB_NAME}", propagate: false, wait: false  //Job name: connect-to-jenkins repo/multibranch-webhook
 
 
                             // Check if the current build is the first build for the branch
-                            if (previousBuild == null) {
+                            if (!currentBuild.previousBuild ) {
                                 echo "This is the first build for the branch: ${branchName}"
                             } else {
                                 // Check if all previous builds have failed
                                 boolean allPreviousBuildsFailed = true
-                                def buildIterator = previousBuild
+                                def buildIterator = currentBuild.previousBuild
                                 while (buildIterator != null) {
                                     if (buildIterator.result == 'SUCCESS') {
                                         // allPreviousBuildsFailed = false
@@ -187,9 +189,8 @@ pipeline{
                 echo 'Deploying to staging'
                 if (firstBuild)
                    {
-                     def (dslFilesList,otherFilesList) = getDiffMaster(".")
+                     def (dslFilesList,otherFilesList) = getDiffMain(".")
 
-                     echo "Modified files compared to master: ${fileList}"
                      echo "Jsons: ${dslFilesList}"
                      echo "Other files: ${otherFilesList}"
                     }
@@ -200,8 +201,11 @@ pipeline{
 
                 //   echo "${currentBuild}"
                 //   echo "Changesets: ${allChangeSets}"
-                     echo "Modified files ${fileList}"
+                    //  echo "Modified files ${fileList}"
 //                      echo "SCM: ${scm}"
+
+                     echo "Jsons: ${dslFilesList}"
+                     echo "Other files: ${otherFilesList}"
 
                 }
               }
