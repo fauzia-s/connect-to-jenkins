@@ -201,11 +201,11 @@ pipeline{
 
                 //   echo "${currentBuild}"
                 //   echo "Changesets: ${allChangeSets}"
-                    //  echo "Modified files ${fileList}"
+                     echo "Modified files ${fileList}"
 //                      echo "SCM: ${scm}"
 
-                     echo "Jsons: ${dslFilesList}"
-                     echo "Other files: ${otherFilesList}"
+                     // echo "Jsons: ${dslFilesList}"
+                     // echo "Other files: ${otherFilesList}"
 
                 }
               }
