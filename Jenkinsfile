@@ -89,7 +89,9 @@ def getDiffMain(prefix) {
      }
 
   return [filesList.toSet()]
+   }
 }
+
 
 def UploadToS3(allModifiedFiles, repoName, topDirectory, s3Bucket) {
   for(String localFile: allModifiedFiles) {
