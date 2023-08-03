@@ -22,7 +22,8 @@ def getAllChangeSetsSinceLastSuccessfulBuild(currentBuild) {
 
 def getModifiedAqueductDSLFiles(jobChangeLogSets, prefix="") {
   // Seperating DSL & Non-DSL files
-  def fileList = []
+  def dslFilesList = []
+  def otherFilesList = []
 
   for (int i = 0; i < jobChangeLogSets.size(); i++) {
     def entries = jobChangeLogSets[i].items
@@ -31,11 +32,16 @@ def getModifiedAqueductDSLFiles(jobChangeLogSets, prefix="") {
       def files = new ArrayList(entry.affectedFiles)
       for (int k = 0; k < files.size(); k++) {
         def file = files[k]
-            fileList.add(file.path)
+        if (file.path.startsWith(prefix)) {
+          if(file.path.endsWith(".json")) {
+            dslFilesList.add(file.path)
+          } else {
+            otherFilesList.add(file.path)
+          }
         }
       }
     }
-  return fileList
+  }
 }
 
  /*
@@ -56,9 +62,40 @@ def getModifiedFiles(currentJobBuild, prefix, sinceLastSuccessFulBuild = false) 
   return getModifiedAqueductDSLFiles(jobChangeLogSets, prefix)
 }
 
-pipeline {
-    agent any
+/*
+ * Get changes compared to master
+ */
 
+def getDiffMain(prefix) {
+  def changedFiles = sh(
+          script: "git diff --name-only origin/main...HEAD --diff-filter=d -- ${prefix}",
+          returnStdout: true
+  ).split("\n")
+
+  def dslFilesList = []
+  def otherFilesList = []
+
+  for (int k = 0; k < changedFiles.size(); k++){
+   def file = changedFiles[k]
+    if (file.startsWith(prefix))
+    {
+      if(file.endsWith(".json"))
+         {
+               dslFilesList.add(file)
+          }
+      else {
+              otherFilesList.add(file)
+            }
+    }
+  }
+  return [dslFilesList.toSet(),otherFilesList.toSet()]
+}
+
+pipeline{
+    agent any
+    environment{
+        boolean firstBuild = true
+    }
     // this section configures Jenkins options
     options {
 
@@ -102,6 +139,43 @@ pipeline {
                 echo 'Reporting....'
             }
         }
+        stage('Check Build Status') {
+                    steps {
+                        script {
+
+                            def branchName = env.BRANCH_NAME //Branch name: multibranch-webhook
+                            def buildNumber = currentBuild.number
+                            // boolean firstBuild = true
+
+                            // Get the previous build status
+//                             def previousBuild = build job: "${JOB_NAME}", propagate: false, wait: false  //Job name: connect-to-jenkins repo/multibranch-webhook
+
+
+                            // Check if the current build is the first build for the branch
+                            if (!currentBuild.previousBuild ) {
+                                echo "This is the first build for the branch: ${branchName}"
+                            } else {
+                                // Check if all previous builds have failed
+                                boolean allPreviousBuildsFailed = true
+                                def buildIterator = currentBuild.previousBuild
+                                while (buildIterator != null) {
+                                    if (buildIterator.result == 'SUCCESS') {
+                                        // allPreviousBuildsFailed = false
+                                        firstBuild = false
+                                        break
+                                    }
+                                    buildIterator = buildIterator.previousBuild
+                                }
+
+                                // if (allPreviousBuildsFailed) {
+                                //     echo "All previous builds for the branch ${branchName} have failed."
+                                // } else {
+                                //     echo "Previous builds for the branch ${branchName} have succeeded or are still running."
+                                // }
+                            }
+                        }
+                    }
+                }
         stage('Deploy to Staging'){
           when {
               allOf {
@@ -110,15 +184,31 @@ pipeline {
                     }
                }
             steps {
-                script{
-                //   def allChangeSets = getAllChangeSetsSinceLastSuccessfulBuild(currentBuild) 
-                   def fileList = getModifiedFiles(currentBuild,'')
-                   echo 'Deploying to staging'
+                script
+                {
+                echo 'Deploying to staging'
+                if (firstBuild)
+                   {
+                     def (dslFilesList,otherFilesList) = getDiffMain(".")
+
+                     echo "Jsons: ${dslFilesList}"
+                     echo "Other files: ${otherFilesList}"
+                    }
+                else
+                {
+                //   def allChangeSets = getAllChangeSetsSinceLastSuccessfulBuild(currentBuild)
+                     def fileList = getModifiedFiles(currentBuild,'')
+
                 //   echo "${currentBuild}"
                 //   echo "Changesets: ${allChangeSets}"
-                echo "Modified files ${fileList}"
-                echo "SCM: ${scm}"
+                     echo "Modified files ${fileList}"
+//                      echo "SCM: ${scm}"
+
+                     // echo "Jsons: ${dslFilesList}"
+                     // echo "Other files: ${otherFilesList}"
+
                 }
+              }
            }
         }
         stage('Deploy to Production'){
@@ -130,6 +220,7 @@ pipeline {
            }
         }
     }
+
     // the post section is a special collection of stages
     // that are run after all other stages have completed
     post {
@@ -142,6 +233,4 @@ pipeline {
             echo "This step will run after all other steps have finished.  It will always run, even in the status of the build is not SUCCESS"
         }
     }
-  }
-
-
+}
