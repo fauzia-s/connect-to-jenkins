@@ -72,23 +72,33 @@ def getDiffMain(prefix) {
           returnStdout: true
   ).split("\n")
 
-  def dslFilesList = []
-  def otherFilesList = []
+  def filesList = []
 
   for (int k = 0; k < changedFiles.size(); k++){
    def file = changedFiles[k]
     if (file.startsWith(prefix))
-    {
-      if(file.endsWith(".json"))
-         {
-               dslFilesList.add(file)
-          }
-      else {
-              otherFilesList.add(file)
-            }
+     {
+       if  (prefix=='staging')
+       {
+         filesList.add(file) //DSLs
+       }
+      else {prefix=="common")
+      {
+              filesList.add(file) //Non-DSLs
+       }
+     }
+
+  return [filesList.toSet()]
+}
+
+def UploadToS3(allModifiedFiles, repoName, topDirectory, s3Bucket) {
+  for(String localFile: allModifiedFiles) {
+    if(localFile != "" && fileExists(localFile)) {
+      echo "Uploading to s3 : ${localFile}"
+      def dest = "dsl/" + repoName + "/" + localFile.drop(topDirectory.length()+1)
+      s3Upload(bucket:"${s3Bucket}", path:"${dest}", file:"${localFile}")
     }
   }
-  return [dslFilesList.toSet(),otherFilesList.toSet()]
 }
 
 pipeline{
@@ -189,7 +199,8 @@ pipeline{
                 echo 'Deploying to staging'
                 if (firstBuild)
                    {
-                     def (dslFilesList,otherFilesList) = getDiffMain(".")
+                     def dslFilesList = getDiffMain("staging")
+                     def otherFilesList = getDiffMain("common")
 
                      echo "Jsons: ${dslFilesList}"
                      echo "Other files: ${otherFilesList}"
@@ -206,6 +217,10 @@ pipeline{
 
                      // echo "Jsons: ${dslFilesList}"
                      // echo "Other files: ${otherFilesList}"
+//                      withAWS (region: "us-east-1", roleAccount: "923008618578", roleSessionName: "All_DSL_Upload_To_S3", credentials: "${AWS_CRED}"){
+//                                      UploadToS3(STAGING_OTHERFILES_CHANGES + STAGING_DSL_CHANGES, repoName, top_directory, S3_BUCKET)
+//                                    }
+//                                  }
 
                 }
               }
