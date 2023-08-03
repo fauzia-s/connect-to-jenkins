@@ -82,7 +82,7 @@ def getDiffMain(prefix) {
        {
          filesList.add(file) //DSLs
        }
-      else {prefix=="common")
+      else (prefix=="common")
       {
               filesList.add(file) //Non-DSLs
        }
