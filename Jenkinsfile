@@ -66,9 +66,12 @@ def getModifiedFiles(currentJobBuild, prefix, sinceLastSuccessFulBuild = false) 
  * Get changes compared to master
  */
 
-def getDiffMain(prefix) {
+def getDiffMain(top_level_dir,prefix) {
+  def finalPath = top_level_dir+"/"+prefix
+//   echo ${top_level_dir}
+//   echo ${prefix}
   def changedFiles = sh(
-          script: "git diff --name-only origin/main...HEAD --diff-filter=d -- ${prefix}",
+          script: "git diff --name-only origin/main...HEAD --diff-filter=d -- ${finalPath}",
           returnStdout: true
   ).split("\n")
 
@@ -76,20 +79,21 @@ def getDiffMain(prefix) {
 
   for (int k = 0; k < changedFiles.size(); k++){
    def file = changedFiles[k]
-    if (file.startsWith(prefix))
+    if (file.startsWith(finalPath))
      {
        if  (prefix=='staging')
        {
+           echo "In staging If"
          filesList.add(file) //DSLs
        }
-      else (prefix=="common")
+      else if (prefix=="common")
       {
+              echo "In common If"
               filesList.add(file) //Non-DSLs
        }
      }
-
-  return [filesList.toSet()]
    }
+     return filesList.toSet()
 }
 
 
@@ -157,6 +161,7 @@ pipeline{
 
                             def branchName = env.BRANCH_NAME //Branch name: multibranch-webhook
                             def buildNumber = currentBuild.number
+
                             // boolean firstBuild = true
 
                             // Get the previous build status
@@ -201,8 +206,9 @@ pipeline{
                 echo 'Deploying to staging'
                 if (firstBuild)
                    {
-                     def dslFilesList = getDiffMain("staging")
-                     def otherFilesList = getDiffMain("common")
+                     def top_directory = "workflow_dsl"
+                     def dslFilesList = getDiffMain(top_directory,"staging")
+                     def otherFilesList = getDiffMain(top_directory,"common")
 
                      echo "Jsons: ${dslFilesList}"
                      echo "Other files: ${otherFilesList}"

@@ -1,1 +1,1 @@
-echo 'Incremental process.'
+echo 'Incremental process'

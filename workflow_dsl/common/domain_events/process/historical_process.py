@@ -1,1 +1,1 @@
-echo 'Historical process'
+echo 'Historical process.'
