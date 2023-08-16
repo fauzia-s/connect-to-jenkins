@@ -42,6 +42,7 @@ def getModifiedAqueductDSLFiles(jobChangeLogSets, prefix="") {
       }
     }
   }
+  return [dslFilesList.toSet(), otherFilesList.toSet()]
 }
 
  /*
@@ -107,7 +108,27 @@ def UploadToS3(allModifiedFiles, repoName, topDirectory, s3Bucket) {
   }
 }
 
-pipeline{
+
+// import groovy.json.JsonSlurperClassic
+//
+// def jsonParse(def json) {
+//     new groovy.json.JsonSlurperClassic().parseText(json)
+// }
+
+
+def parseDSLforStgCfg(dslFilesList) {
+  def dslData
+  for (dsl in dslFilesList){
+//       def dslData =  jsonParse(readFile(dsl))
+      dslData = readJSON file: dsl
+      if ((dslData.schedule) || (dslData.notification.contains('pagerduty'))){
+          exit 1
+      }
+  }
+}
+
+
+pipeline {
     agent any
     environment{
         boolean firstBuild = true
@@ -204,15 +225,18 @@ pipeline{
                 script
                 {
                 echo 'Deploying to staging'
+                try{
                 if (firstBuild)
                    {
                      def top_directory = "workflow_dsl"
                      def dslFilesList = getDiffMain(top_directory,"staging")
                      def otherFilesList = getDiffMain(top_directory,"common")
 
-                     echo "Jsons: ${dslFilesList}"
+                     echo "DSLs: ${dslFilesList}"
                      echo "Other files: ${otherFilesList}"
-                    }
+
+                     parseDSLforStgCfg(dslFilesList)
+                     }
                 else
                 {
                 //   def allChangeSets = getAllChangeSetsSinceLastSuccessfulBuild(currentBuild)
@@ -231,6 +255,13 @@ pipeline{
 //                                  }
 
                 }
+               }//for try
+               catch (Exception e) {
+                     println 'Exception occurred: ' + e.toString()
+                     currentBuild.result="FAILED"
+                     println("Check the configs in the DSL. Should not have schedule and/or pagerduty for notification. Remove the schedule and/or add your email id for notification instead.")
+
+                 }
               }
            }
         }
@@ -257,3 +288,4 @@ pipeline{
         }
     }
 }
+

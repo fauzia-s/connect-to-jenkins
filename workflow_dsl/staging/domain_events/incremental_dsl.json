@@ -1,4 +1,32 @@
 {
-  "company" : "Upstart",
-  "name": "Fauzia."
+  "permission": [
+    {
+      "group_name": "Databricks: de_curation_user",
+      "permission_level": "CAN_MANAGE"
+    },
+    {
+      "group_name": "Databricks: swe_verifications_data_user",
+      "permission_level": "CAN_MANAGE"
+    },
+    {
+      "group_name": "Databricks: model_engineering_user",
+      "permission_level": "CAN_MANAGE"
+    }
+  ],
+  "notification": {
+    "on_failure": [
+      "data-curation-layer-email.y78ripjp@upstart.pagerduty.com"
+    ]
+  },
+  "retries": 0,
+  "schedule":{
+    "type":"quartz_cron",
+    "quartz_cron":"0 0 9,21 ? * * *"
+  },
+  "cluster": {
+    "spark_version": "10.4.x-scala2.12",
+    "driver_node_type_id": "r5d.2xlarge",
+    "node_type_id": "r5d.4xlarge",
+    "num_workers": "2"
+  }
 }
